@@ -6,60 +6,24 @@ local AntiCheatRemote   = ReplicatedStorage:WaitForChild("AntiCheat")
 local CheckChildExists  = ReplicatedStorage:WaitForChild("CheckChildExists")
 local GetKey            = ReplicatedStorage:WaitForChild("GetKey")
 
--- 1) Daftar nama metrics/service yang di‑ignore
+-- 1) Daftar nama metrics/service (dan instance lain) yang di‑ignore
 local ignoreNames = {
-        "FrameRateManager",
-	"DeviceFeatureLevel",
-	"DeviceShadingLanguage",
-	"AverageQualityLevel",
-	"AutoQuality",
-	"NumberOfSettles",
-	"AverageSwitches",
-	"FramebufferWidth",
-	"FramebufferHeight",
-	"Batches",
-	"Indices",
-	"MaterialChanges",
-	"VideoMemoryInMB",
-	"AverageFPS",
-	"FrameTimeVariance",
-	"FrameSpikeCount",
-	"RenderAverage",
-	"PrepareAverage",
-	"PerformAverage",
-	"AveragePresent",
-	"AverageGPU",
-	"RenderThreadAverage",
-	"TotalFrameWallAverage",
-	"PerformVariance",
-	"PresentVariance",
-	"GpuVariance",
-	"MsFrame0",
-	"MsFrame1",
-	"MsFrame2",
-	"MsFrame3",
-	"MsFrame4",
-	"MsFrame5",
-	"MsFrame6",
-	"MsFrame7",
-	"MsFrame8",
-	"MsFrame9",
-	"MsFrame10",
-	"MsFrame11",
-	"Render",
-	"Memory",
-	"Video",
-	"CursorImage",
-	"LanguageService",
-        "UIDragDetectorService",
-        "MemStorageConnection"
+    "FrameRateManager","DeviceFeatureLevel","DeviceShadingLanguage",
+    "AverageQualityLevel","AutoQuality","NumberOfSettles","AverageSwitches",
+    "FramebufferWidth","FramebufferHeight","Batches","Indices","MaterialChanges",
+    "VideoMemoryInMB","AverageFPS","FrameTimeVariance","FrameSpikeCount",
+    "RenderAverage","PrepareAverage","PerformAverage","AveragePresent",
+    "AverageGPU","RenderThreadAverage","TotalFrameWallAverage","PerformVariance",
+    "PresentVariance","GpuVariance","MsFrame0","MsFrame1","MsFrame2","MsFrame3",
+    "MsFrame4","MsFrame5","MsFrame6","MsFrame7","MsFrame8","MsFrame9",
+    "MsFrame10","MsFrame11","Render","Memory","Video","CursorImage","LanguageService","UIDragDetectorService","MemStorageConnection"
 }
 local ignoreSet = {}
 for _, n in ipairs(ignoreNames) do
     ignoreSet[n] = true
 end
 
--- Helper: apakah inst atau salah satu parent‑nya adalah Character model?
+-- 2) Helper: apakah inst atau salah satu parent‑nya adalah Character model?
 local function isCharacter(inst)
     return inst:IsA("Model") and Players:GetPlayerFromCharacter(inst) ~= nil
 end
@@ -74,7 +38,7 @@ local function isInCharacter(inst)
     return false
 end
 
--- Helper: ambil semua ancestor untuk cek ReplicatedStorage
+-- 3) Helper: ambil semua ancestor untuk cek ReplicatedStorage
 local function getAncestors(inst)
     local t, p = {}, inst.Parent
     while p do
@@ -84,31 +48,32 @@ local function getAncestors(inst)
     return t
 end
 
--- delay biar world ter‑load
+-- 4) Delay agar dunia ter‑load
 task.wait(1)
 
+-- 5) Main listener: deteksi setiap instance baru
 game.DescendantAdded:Connect(function(k)
-    -- **NEW**: Abaikan apa pun di bawah game.Players (StarterGear, Backpack, player Instances, dll.)
+    -- A) **Skip apa pun di bawah game.Players** (StarterGear, Backpack, PlayerScripts, dsb.)
     if k:IsDescendantOf(Players) then
         return
     end
 
-    -- 1) Abaikan apa pun di dalam Character model
+    -- B) Skip apa pun di dalam Character model
     if isInCharacter(k) then
         return
     end
 
-    -- 2) Abaikan StringValue "Key" (rotasi server side)
+    -- C) Skip StringValue "Key" (rotasi server side)
     if k:IsA("StringValue") and k.Name == "Key" then
         return
     end
 
-    -- 3) Abaikan metrics/service tertentu
+    -- D) Skip nama‑nama di ignoreSet
     if ignoreSet[k.Name] then
         return
     end
 
-    -- 4) Cek di server apakah child sah
+    -- E) Server‑side validasi child
     local ok, exists = pcall(function()
         return CheckChildExists:InvokeServer(k.Parent.Name, k.Name)
     end)
@@ -117,7 +82,7 @@ game.DescendantAdded:Connect(function(k)
         return
     end
 
-    -- 5) Pastikan tidak ditanam di ReplicatedStorage
+    -- F) Cegah penanaman di ReplicatedStorage
     for _, anc in ipairs(getAncestors(k)) do
         if anc == ReplicatedStorage then
             AntiCheatRemote:FireServer("???", "using exploit.")
@@ -125,7 +90,7 @@ game.DescendantAdded:Connect(function(k)
         end
     end
 
-    -- 6) Ambil dan bandingkan Key
+    -- G) Ambil dan bandingkan Key
     local instKey   = k:FindFirstChild("Key") and k.Key.Value
     local serverKey = GetKey:InvokeServer()
     if instKey then
