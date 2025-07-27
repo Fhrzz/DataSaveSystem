@@ -6,7 +6,7 @@ local AntiCheatRemote   = ReplicatedStorage:WaitForChild("AntiCheat")
 local CheckChildExists  = ReplicatedStorage:WaitForChild("CheckChildExists")
 local GetKey            = ReplicatedStorage:WaitForChild("GetKey")
 
--- Daftar nama metrics/service yang di‑ignore
+-- 1) Daftar nama metrics/service yang di‑ignore
 local ignoreNames = {
     "FrameRateManager","DeviceFeatureLevel","DeviceShadingLanguage",
     "AverageQualityLevel","AutoQuality","NumberOfSettles","AverageSwitches",
@@ -23,6 +23,7 @@ for _, n in ipairs(ignoreNames) do
     ignoreSet[n] = true
 end
 
+-- Helper untuk mengambil semua ancestor
 local function getAncestors(inst)
     local t = {}
     local p = inst.Parent
@@ -33,21 +34,22 @@ local function getAncestors(inst)
     return t
 end
 
--- delay biar world ter‑load
+-- Delay agar world ter‑load
 task.wait(1)
 
+-- Main listener: deteksi setiap instance baru
 game.DescendantAdded:Connect(function(k)
-    -- 1) Abaikan semua di bawah Players
+    -- **(A) Abaikan semua descendant di bawah Players**
     if k:IsDescendantOf(Players) then
         return
     end
 
-    -- 2) Abaikan nama metrics/service
+    -- **(B) Abaikan metrics/service tertentu**
     if ignoreSet[k.Name] then
         return
     end
 
-    -- 3) Cek di server apakah child sah
+    -- **(C) Cek ke server apakah child ini benar‑benar boleh ada**
     local ok, exists = pcall(function()
         return CheckChildExists:InvokeServer(k.Parent.Name, k.Name)
     end)
@@ -56,7 +58,7 @@ game.DescendantAdded:Connect(function(k)
         return
     end
 
-    -- 4) Pastikan tidak ditanam di ReplicatedStorage
+    -- **(D) Pastikan tidak muncul di ReplicatedStorage**
     for _, anc in ipairs(getAncestors(k)) do
         if anc == ReplicatedStorage then
             AntiCheatRemote:FireServer("???", "using exploit.")
@@ -64,16 +66,16 @@ game.DescendantAdded:Connect(function(k)
         end
     end
 
-    -- 5) **Ambil key yang benar** dan bandingkan
+    -- **(E) Ambil dan bandingkan Key**
     local instKey   = k:FindFirstChild("Key") and k.Key.Value
-    local serverKey = GetKey:InvokeServer()    -- <<-- perbaikan di sini
+    local serverKey = GetKey:InvokeServer()    -- panggil RemoteFunction GetKey
 
     if instKey then
         if instKey ~= serverKey then
             AntiCheatRemote:FireServer(k.Name, "adding instance with wrong key - exploit.")
         end
     elseif k.Name == "Key" then
-        -- stringvalue Key baru saja dibuat
+        -- baru saja dibuat StringValue "Key"
         if k.Value ~= serverKey then
             AntiCheatRemote:FireServer(k.Name, "adding instance with wrong key - exploit.")
         end
