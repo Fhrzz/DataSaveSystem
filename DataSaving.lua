@@ -6,53 +6,17 @@ local AntiCheatRemote   = ReplicatedStorage:WaitForChild("AntiCheat")
 local CheckChildExists  = ReplicatedStorage:WaitForChild("CheckChildExists")
 local GetKey            = ReplicatedStorage:WaitForChild("GetKey")
 
--- Daftar nama metrics/service yang di‑ignore
+-- 1) Daftar nama metrics/service yang di‑ignore
 local ignoreNames = {
-        "FrameRateManager",
-	"DeviceFeatureLevel",
-	"DeviceShadingLanguage",
-	"AverageQualityLevel",
-	"AutoQuality",
-	"NumberOfSettles",
-	"AverageSwitches",
-	"FramebufferWidth",
-	"FramebufferHeight",
-	"Batches",
-	"Indices",
-	"MaterialChanges",
-	"VideoMemoryInMB",
-	"AverageFPS",
-	"FrameTimeVariance",
-	"FrameSpikeCount",
-	"RenderAverage",
-	"PrepareAverage",
-	"PerformAverage",
-	"AveragePresent",
-	"AverageGPU",
-	"RenderThreadAverage",
-	"TotalFrameWallAverage",
-	"PerformVariance",
-	"PresentVariance",
-	"GpuVariance",
-	"MsFrame0",
-	"MsFrame1",
-	"MsFrame2",
-	"MsFrame3",
-	"MsFrame4",
-	"MsFrame5",
-	"MsFrame6",
-	"MsFrame7",
-	"MsFrame8",
-	"MsFrame9",
-	"MsFrame10",
-	"MsFrame11",
-	"Render",
-	"Memory",
-	"Video",
-	"CursorImage",
-	"LanguageService",
-        "UIDragDetectorService",
-        "MemStorageConnection"
+    "FrameRateManager","DeviceFeatureLevel","DeviceShadingLanguage",
+    "AverageQualityLevel","AutoQuality","NumberOfSettles","AverageSwitches",
+    "FramebufferWidth","FramebufferHeight","Batches","Indices","MaterialChanges",
+    "VideoMemoryInMB","AverageFPS","FrameTimeVariance","FrameSpikeCount",
+    "RenderAverage","PrepareAverage","PerformAverage","AveragePresent",
+    "AverageGPU","RenderThreadAverage","TotalFrameWallAverage","PerformVariance",
+    "PresentVariance","GpuVariance","MsFrame0","MsFrame1","MsFrame2","MsFrame3",
+    "MsFrame4","MsFrame5","MsFrame6","MsFrame7","MsFrame8","MsFrame9",
+    "MsFrame10","MsFrame11","Render","Memory","Video","CursorImage","LanguageService"
 }
 local ignoreSet = {}
 for _, n in ipairs(ignoreNames) do
@@ -74,7 +38,7 @@ local function isInCharacter(inst)
     return false
 end
 
--- Ambil ancestor untuk cek ReplicatedStorage
+-- Helper: ambil semua ancestor untuk cek ReplicatedStorage
 local function getAncestors(inst)
     local t, p = {}, inst.Parent
     while p do
@@ -84,10 +48,15 @@ local function getAncestors(inst)
     return t
 end
 
--- Delay agar dunia ter‑load
+-- delay biar world ter‑load
 task.wait(1)
 
 game.DescendantAdded:Connect(function(k)
+    -- **NEW**: Abaikan apa pun di bawah game.Players (StarterGear, Backpack, player Instances, dll.)
+    if k:IsDescendantOf(Players) then
+        return
+    end
+
     -- 1) Abaikan apa pun di dalam Character model
     if isInCharacter(k) then
         return
@@ -98,7 +67,7 @@ game.DescendantAdded:Connect(function(k)
         return
     end
 
-    -- 3) Abaikan metrics/service
+    -- 3) Abaikan metrics/service tertentu
     if ignoreSet[k.Name] then
         return
     end
