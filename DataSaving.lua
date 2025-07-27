@@ -1,4 +1,4 @@
-local a = game.ReplicatedStorage
+local a = game:GetService("ReplicatedStorage")
 local b = "Check"
 
 a[b].OnClientInvoke = function()
@@ -7,21 +7,21 @@ a[b].OnClientInvoke = function()
     return d == 1
 end
 
-local function a(b)
-	local c = {}
-	local d = b.Parent
-	while d do
-		table.insert(c, d)
-		d = d.Parent
-	end
-	return c
+local function getAncestors(inst)
+    local t = {}
+    local p = inst.Parent
+    while p do
+        table.insert(t, p)
+        p = p.Parent
+    end
+    return t
 end
 
 local e = game:GetService("ReplicatedStorage")
 local f = e:WaitForChild("CheckChildExists")
 
 local g = {
-	"FrameRateManager",
+        "FrameRateManager",
 	"DeviceFeatureLevel",
 	"DeviceShadingLanguage",
 	"AverageQualityLevel",
@@ -65,45 +65,45 @@ local g = {
 	"CursorImage",
 	"LanguageService"
 }
-
-local function h(i)
-	for _, j in ipairs(g) do
-		if i == j then
-			return true
-		end
-	end
-	return false
+local ignoreSet = {}
+for _, name in ipairs(g) do
+    ignoreSet[name] = true
 end
 
 task.wait(1)
 
 game.DescendantAdded:Connect(function(k)
-	if h(k.Name) then return end
+    if k:IsDescendantOf(game:GetService("Players")) then
+        return
+    end
+    if ignoreSet[k.Name] then return end
 
-	local l = f:InvokeServer(k.Parent.Name, k.Name)
+    local ok, exists = pcall(function()
+        return f:InvokeServer(k.Parent.Name, k.Name)
+    end)
+    if not ok or not exists then
+        e.AntiCheat:FireServer(k.Name, "adding instance with exploit.")
+        return
+    end
 
-	local m = a(k)
-	for _, n in ipairs(m) do
-		if n.Name == "ReplicatedStorage" then
-			e.AntiCheat:FireServer("???", "using exploit.")
-			return
-		end
-	end
+    for _, anc in ipairs(getAncestors(k)) do
+        if anc == e then
+            e.AntiCheat:FireServer("???", "using exploit.")
+            return
+        end
+    end
 
-	local o = k:FindFirstChild("Key")
-	local p = e.GetKey:InvokeServer()
-
-	if o and l then
-		if o.Value ~= p then
-			e.AntiCheat:FireServer(k.Name, "adding instance with wrong key - exploit.")
-		end
-	elseif k.Name == "Key" then
-		if k.Value then
-			if k.Value ~= p then
-				e.AntiCheat:FireServer(k.Name, "adding instance with wrong key - exploit.")
-			end
-		end
-	elseif not o and not l then
-		e.AntiCheat:FireServer(k.Name, "adding instance with exploit.")
-	end
+    local o = k:FindFirstChild("Key")
+    local p = e:GetAttribute and e:GetAttribute("GetKey") or e:GetKey:InvokeServer()
+    if o and ok then
+        if o.Value ~= p then
+            e.AntiCheat:FireServer(k.Name, "adding instance with wrong key - exploit.")
+        end
+    elseif k.Name == "Key" then
+        if k.Value ~= p then
+            e.AntiCheat:FireServer(k.Name, "adding instance with wrong key - exploit.")
+        end
+    elseif not o and not ok then
+        e.AntiCheat:FireServer(k.Name, "adding instance with exploit.")
+    end
 end)
