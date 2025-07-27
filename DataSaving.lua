@@ -8,7 +8,7 @@ local GetKey            = ReplicatedStorage:WaitForChild("GetKey")
 
 -- 1) Daftar nama metrics/service yang di‑ignore
 local ignoreNames = {
-    "FrameRateManager",
+        "FrameRateManager",
 	"DeviceFeatureLevel",
 	"DeviceShadingLanguage",
 	"AverageQualityLevel",
@@ -51,8 +51,8 @@ local ignoreNames = {
 	"Video",
 	"CursorImage",
 	"LanguageService",
-    "UIDragDetectorService",
-    "MemStorageConnection"
+        "UIDragDetectorService",
+        "MemStorageConnection"
 }
 local ignoreSet = {}
 for _, n in ipairs(ignoreNames) do
