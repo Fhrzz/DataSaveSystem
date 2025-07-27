@@ -50,7 +50,9 @@ local ignoreNames = {
 	"Memory",
 	"Video",
 	"CursorImage",
-	"LanguageService"
+	"LanguageService",
+        "UIDragDetectorService",
+        "MemStorageConnection"
 }
 local ignoreSet = {}
 for _, n in ipairs(ignoreNames) do
